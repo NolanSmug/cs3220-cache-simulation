@@ -1,0 +1,29 @@
+-----------------------------------------
+cache size = 1024
+block size = 64
+#blocks = 16
+#sets = 16
+associativity = 1
+tag length = 6
+-----------------------------------------
+
+read miss [addr=0 index=0 block_index=0 tag=0: word=0 (0 - 63)]
+=> address = 0 <0000000000000000>; word = 0
+read hit [addr=0 index=0 block_index=0 tag=0: word=0 (0 - 63)]
+=> address = 0 <0000000000000000>; word = 0
+read hit [addr=60 index=0 block_index=0 tag=0: word=60 (0 - 63)]
+=> address = 60 <0000000000111100>; word = 60
+read miss [addr=64 index=1 block_index=0 tag=0: word=64 (64 - 127)]
+=> address = 64 <0000000001000000>; word = 64
+read miss [addr=1000 index=15 block_index=0 tag=0: word=1000 (960 - 1023)]
+=> address = 1000 <0000001111101000>; word = 1000
+read miss + replace [addr=1028 index=0 tag=1: word=1028 (1024 - 1087)]
+evict tag 0 in block_index 0
+read in (1024 - 1087)
+=> address = 1028 <0000010000000100>; word = 1028
+read miss [addr=12920 index=9 block_index=0 tag=12: word=12920 (12864 - 12927)]
+=> address = 12920 <0011001001111000>; word = 12920
+read hit [addr=12924 index=9 block_index=0 tag=12: word=12924 (12864 - 12927)]
+=> address = 12924 <0011001001111100>; word = 12924
+read miss [addr=12928 index=10 block_index=0 tag=12: word=12928 (12928 - 12991)]
+=> address = 12928 <0011001010000000>; word = 12928
