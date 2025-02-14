@@ -19,24 +19,24 @@ int parse_cli(int argc, char* argv[], struct CliArgs *args) {
     for (int i = 1; i < argc; i++) {
         // printf("%s \n", argv[i]);
 
-        if (strcmp(argv[i], "--mem-addr-size")) {
+        if (!strcmp(argv[i], "--mem-addr-size")) {
             expect(i + 1 < argc, "Expecting value to come after --mem-addr-size");
             int l = atoi(argv[i+1]);
             args->cache_config.memory_addr_len = l;
             args->memory_size = (uint32_t)pow(2, l);
             expect(args->memory_size > 0, "--mem-addr-size must be a positive integer");
             i++;
-        } else if (strcmp(argv[i], "--cache-size")) {
+        } else if (!strcmp(argv[i], "--cache-size")) {
             expect(i + 1 < argc, "Expecting value to come after --cache-size");
             args->cache_config.cache_size = atoi(argv[i+1]);
             expect(args->cache_config.cache_size > 0, "--cache-size must be a positive integer");
             i++;
-        } else if (strcmp(argv[i], "--cache-block-size")) {
+        } else if (!strcmp(argv[i], "--cache-block-size")) {
             expect(i + 1 < argc, "Expecting value to come after --cache-block-size");
             args->cache_config.cache_blk_size = atoi(argv[i+1]);
             expect(args->cache_config.cache_blk_size > 0, "--cache-block-size must be a positive integer");
             i++;
-        } else if (strcmp(argv[i], "--associativity")) {
+        } else if (!strcmp(argv[i], "--associativity")) {
             expect(i + 1 < argc, "Expecting value to come after --associativity");
             args->cache_config.associativity = atoi(argv[i+1]);
             expect(args->cache_config.associativity > 0, "--associativity must be a positive integer");
