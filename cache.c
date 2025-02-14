@@ -1,10 +1,13 @@
-// PA2 Simulation of a Hardware Cache
-// Authors: Nolan Cyr and Eric Edlund
+#include "cache.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+struct SetAssociativeCache new_cache_backed_by(struct CacheConfig config, struct MemoryRegion *const backing) {
+    return (struct SetAssociativeCache){};
+}
 
-int main(int argc, char* argv[]) {
+int read(struct SetAssociativeCache *const cache, uint32_t addr, Word *const target) {
+    return 0;
+}
+
+int write(struct SetAssociativeCache *const cache, uint32_t addr, const Word *const value) {
     return 0;
 }
