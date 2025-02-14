@@ -13,3 +13,6 @@ echo "test_cli.so: $?"
 # > bt
 #
 # Then it tells you what happened.
+
+./build.sh
+echo "Project Build: $?"
