@@ -24,12 +24,22 @@ struct CacheConfig {
 	enum WriteStrategy write_strat;
 };
 
+struct CacheBlock {
+	uint32_t tag;
+	uint32_t offset;
+	uint32_t index;
+	uint8_t *value;
+	uint32_t size;
+};
+
 // Does not own the memory region.
 struct SetAssociativeCache {
 	struct CacheConfig config;
 	struct MemoryRegion *inner;
 	struct AccessMetadata last_access;
 };
+
+void initialize_bit_lengths(struct CacheConfig config);
 
 // Constructs and returns a set associative cache backed by the given memory region.
 //
