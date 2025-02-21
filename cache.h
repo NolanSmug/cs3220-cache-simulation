@@ -34,12 +34,12 @@ struct CacheBlock {
 
 // Does not own the memory region.
 struct SetAssociativeCache {
-	struct CacheConfig config;
-	struct MemoryRegion *inner;
-	struct AccessMetadata last_access;
+    struct CacheConfig config;
+    struct MemoryRegion *inner;
+    struct AccessMetadata last_access;
+    struct CacheBlock *blocks;
+    uint32_t num_blocks;
 };
-
-void initialize_bit_lengths(struct CacheConfig config);
 
 // Constructs and returns a set associative cache backed by the given memory region.
 //
