@@ -9,7 +9,7 @@ echo "test_cli.so: $?"
 gcc -o part_1_test.so tests/part_1_test.c cache.c access_metadata.c -lm -g && 
 	./part_1_test.so
 
-echo "test_cli.so: $?"
+echo "part_1_test.so: $?"
 
 # Example debugger usage
 #
