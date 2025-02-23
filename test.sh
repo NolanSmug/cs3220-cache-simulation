@@ -6,6 +6,11 @@ gcc -o test_cli.so tests/test_cli.c cli.c cache.c access_metadata.c -lm -g &&
 
 echo "test_cli.so: $?"
 
+gcc -o part_1_test.so tests/part_1_test.c cache.c access_metadata.c -lm -g && 
+	./part_1_test.so
+
+echo "test_cli.so: $?"
+
 # Example debugger usage
 #
 # gdb ./test_cli.so

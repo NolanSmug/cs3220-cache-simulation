@@ -6,15 +6,18 @@
 
 struct AccessMetadata {
 	uint32_t addr;
+	uint32_t addr_len;
 	uint32_t index;
 	uint32_t blk_index;
 	uint32_t tag;
 	uint32_t word;
 	bool cache_hit;
+	uint32_t block_start;
+	uint32_t block_end;
+	bool eviction;
+	uint32_t evicted_tag;
+	uint32_t evicted_block_index;
 };
 
 // Creates string matching the expected output format.
-//
-// 		read miss [addr=0 index=0 block_index=0 tag=0: word=0 (0 - 63)]
-// 		
 char* to_string(const struct AccessMetadata *const data);
