@@ -17,6 +17,9 @@ struct AccessMetadata {
 	bool eviction;
 	uint32_t evicted_tag;
 	uint32_t evicted_block_index;
+	bool write_back;
+	uint32_t wb_start;
+	uint32_t wb_end;	
 };
 
 // Creates string matching the expected output format.

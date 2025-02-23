@@ -25,11 +25,11 @@ struct CacheConfig {
 };
 
 struct CacheBlock {
-  int32_t tag;
-  // Starts at max possible value. Every time a cache block is read, it's
-  // recency becomes 0 and all other blocks have 1 added to their recency.
-  int8_t used_recency;
-  uint8_t *value;
+  int32_t tag;        
+  bool valid;         
+  bool dirty;        
+  int8_t used_recency; 
+  uint8_t *data;  
 };
 
 // Does not own the memory region.

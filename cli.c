@@ -82,5 +82,5 @@ struct LexResult {
 
 
 struct LexResult* lex(int argc, char *argv[]) {
-
+    return 0;
 }
