@@ -8,7 +8,7 @@ static void log(struct SetAssociativeCache *const cache) {
     printf("%s\n\n", to_string(&accesses));
 }
 
-static void apply_accesses(struct SetAssociativeCache *const cache) {
+static void apply_test_1_accesses(struct SetAssociativeCache *const cache) {
     uint32_t word;
     
     read(cache,1152, &word);
@@ -61,6 +61,58 @@ static void apply_accesses(struct SetAssociativeCache *const cache) {
 }
 
 
+static void apply_test_2_accesses(struct SetAssociativeCache *const cache) {
+    uint32_t word;
+
+    read(cache, 46916, &word);
+    log(cache);
+    read(cache, 46932, &word);
+    log(cache);
+    read(cache, 12936, &word);
+    log(cache);
+    read(cache, 13964, &word);
+    log(cache);
+    word = 40;
+    write(cache, 46956, &word);
+    log(cache);
+    read(cache, 46956, &word);
+    log(cache);
+    read(cache, 56132, &word);
+    log(cache);
+}
+
+
+static void apply_test_3_accesses(struct SetAssociativeCache *const cache) {
+    uint32_t word;
+    read(cache, 0, &word);
+    log(cache);
+    read(cache, 13432, &word);
+    log(cache);
+    read(cache, 13388, &word);
+    log(cache);
+    read(cache, 62540, &word);
+    log(cache);
+    read(cache, 4, &word);
+    log(cache);
+    read(cache, 16452, &word);
+    log(cache);
+    read(cache, 32900, &word);
+    log(cache);
+    read(cache, 49348, &word);
+    log(cache);
+    read(cache, 260, &word);
+    log(cache);
+    read(cache, 16708, &word);
+    log(cache);
+    read(cache, 33156, &word);
+    log(cache);
+    read(cache, 49604, &word);
+    log(cache);
+    read(cache, 516, &word);
+    log(cache);
+}
+
+
 static void init_mem(struct MemoryRegion *memory) {
     memset(memory->buffer, 0, memory->size);
     for (int i = 0; i < memory->size; i += 4) {
@@ -90,13 +142,36 @@ int main() {
     config.write_strat = WriteThrough;
     cache = new_cache_backed_by(config, &memory);
     printf("----- part-two-test-one-wt -----\n\n");
-    apply_accesses(&cache);
-
+    apply_test_1_accesses(&cache);
 
     init_mem(&memory);
     config.write_strat = WriteBack;
     cache = new_cache_backed_by(config, &memory);
     printf("----- part-two-test-one-wb -----\n\n");
-    apply_accesses(&cache);
+    apply_test_1_accesses(&cache);
+
+    init_mem(&memory);
+    config.write_strat = WriteThrough;
+    cache = new_cache_backed_by(config, &memory);
+    printf("----- part-two-test-two-wt -----\n\n");
+    apply_test_2_accesses(&cache);
+
+    init_mem(&memory);
+    config.write_strat = WriteBack;
+    cache = new_cache_backed_by(config, &memory);
+    printf("----- part-two-test-two-wb -----\n\n");
+    apply_test_2_accesses(&cache);
+
+    init_mem(&memory);
+    config.write_strat = WriteThrough;
+    cache = new_cache_backed_by(config, &memory);
+    printf("----- part-two-test-three-wt -----\n\n");
+    apply_test_3_accesses(&cache);
+
+    init_mem(&memory);
+    config.write_strat = WriteBack;
+    cache = new_cache_backed_by(config, &memory);
+    printf("----- part-two-test-three-wb -----\n\n");
+    apply_test_3_accesses(&cache);
 }
 

@@ -169,8 +169,7 @@ Word *access_memory(struct SetAssociativeCache *const cache,
 
     // Get starting address of the block in main memory
     uint8_t *source_block =
-        cache->inner->buffer +
-        block_start; // block start is technically block offset
+        &cache->inner->buffer[block_start]; // block start is technically block offset
     // Read memory into cache block
     memcpy(blk_hit->data, source_block, block_size);
     blk_hit->tag = tag;
@@ -185,15 +184,12 @@ Word *access_memory(struct SetAssociativeCache *const cache,
 
     if (cache->config.write_strat == WriteThrough) {
       uint8_t *source_block =
-          cache->inner->buffer +
-          block_start; // block start is technically block offset
+          &cache->inner->buffer[block_start]; // block start is technically block offset
       memcpy(source_block, blk_hit->data, block_size);
     } else {
       blk_hit->dirty = true;
     }
   }
-
-  printf("%d", ((Word *)blk_hit->data)[block_offset]);
 
   return &((Word *)blk_hit->data)[block_offset];
 }
