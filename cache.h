@@ -61,3 +61,4 @@ int read(struct SetAssociativeCache *const cache, uint32_t addr,
 // Returns non-zero if there was a problem writing.
 int write(struct SetAssociativeCache *const cache, uint32_t addr,
           const Word *const value);
+

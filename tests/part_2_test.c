@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include "../cache.h"
@@ -114,20 +115,23 @@ static void apply_test_3_accesses(struct SetAssociativeCache *const cache) {
 
 
 static void init_mem(struct MemoryRegion *memory) {
+    printf("Initing memory %d", memory->size);
     memset(memory->buffer, 0, memory->size);
-    for (int i = 0; i < memory->size; i += 4) {
-        *( (uint32_t *) &memory->buffer[i]) = (uint32_t)(i / 4);
-        if (i < 10) {
-            printf("word %i is %i, ", i, (uint32_t)memory->buffer[i]);
+    for (int i = 0; i < memory->size / 4 - 1; i += 4) {
+        *( (uint32_t *) &memory->buffer[i]) = (uint32_t)(i);
+        if (i / 4 < 4) {
+            printf("word %i is %i, ", i / 4, (uint32_t)memory->buffer[i]);
         }
     }
     printf("...\n");
+
+    assert((uint32_t)memory->buffer[1004] == 236);
 }
 
 
 int main() {
     struct MemoryRegion memory;
-    memory.size = 2 << 14;
+    memory.size = 2 << 16;
     uint8_t buf[memory.size];
     memory.buffer = buf;
 

@@ -1,5 +1,6 @@
 #include "cache.h"
 #include "math.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,6 +36,8 @@ new_cache_backed_by(struct CacheConfig config,
   cache.inner = backing;
   cache.last_access.addr = 0;
   cache.last_access.index = 0;
+  cache.last_access.set_size = config.associativity;
+  cache.last_access.lru_queue = malloc(sizeof(uint8_t) * config.associativity);
 
   // calculate number of blocks
   const int num_blocks = config.cache_size / config.cache_blk_size;
@@ -48,7 +51,7 @@ new_cache_backed_by(struct CacheConfig config,
     cache.blocks[i].tag = -1;
     cache.blocks[i].valid = false; // initialize as invalid
     cache.blocks[i].dirty = false; // initialize as clean
-    cache.blocks[i].used_recency = 0;
+    cache.blocks[i].used_recency = 127;
     cache.blocks[i].data = malloc(config.cache_blk_size); // allocate memory
   }
 
@@ -73,9 +76,34 @@ static struct BlockBits get_block_bits(struct CacheConfig config) {
   return bits;
 }
 
-Word *access_memory(struct SetAssociativeCache *const cache,
-                                        uint32_t addr, uint32_t word,
-                                        bool write) {
+static void clear(struct CacheBlock **arr, int len) {
+  for (int i = 0; i < len; i++) {
+    arr[i] = NULL;
+  }
+}
+
+static int find_oldest(struct CacheBlock **arr, int len) {
+  int oldest = -1;
+  int age = -1;
+  for (int i = 0; i < len; i++) {
+    if (arr[i] == NULL) {
+      continue;
+    }
+    struct CacheBlock *blk = arr[i];
+    if (!blk->valid) {
+      return i;
+    }
+    if (blk->used_recency > age) {
+      age = blk->used_recency;
+      oldest = i;
+    }
+  }
+  assert(oldest != -1);
+  return oldest;
+}
+
+Word *access_memory(struct SetAssociativeCache *const cache, uint32_t addr,
+                    uint32_t word, bool write) {
   struct BlockBits bits = get_block_bits(cache->config);
   const uint32_t block_size = cache->config.cache_blk_size;
 
@@ -94,6 +122,7 @@ Word *access_memory(struct SetAssociativeCache *const cache,
     struct CacheBlock *blk = &cache->blocks[start_idx + i];
     if (blk->valid && blk->tag == tag) { // if valid AND tag matches
       blk_hit = blk;
+      cache->last_access.blk_index = i;
       break;
     }
   }
@@ -109,21 +138,31 @@ Word *access_memory(struct SetAssociativeCache *const cache,
   cache->last_access.block_end = block_end;
   cache->last_access.addr_len = cache->config.memory_addr_len;
 
+  cache->last_access.eviction = false;
   if (!blk_hit) {
     // Pick lru
     struct CacheBlock *best = NULL;
-    int best_recency = 127;
+    int best_recency = 0;
+    for (int i = 0; i < cache->config.associativity; i++) {
+      struct CacheBlock *blk = &cache->blocks[start_idx + i];
+    }
+
     for (int i = 0; i < cache->config.associativity; i++) {
       struct CacheBlock *blk = &cache->blocks[start_idx + i];
       if (!blk->valid) {
         best = blk;
+        cache->last_access.blk_index = i;
         break;
       }
-      if (blk->used_recency <= best_recency) {
+      if (blk->used_recency >= best_recency) {
         best = blk;
         best_recency = blk->used_recency;
+        cache->last_access.blk_index = i;
       }
     }
+    assert(best != NULL);
+    assert(best_recency >= 0);
+    assert(best_recency <= 127);
 
     // Handle write back
     cache->last_access.write_back = false;
@@ -143,33 +182,18 @@ Word *access_memory(struct SetAssociativeCache *const cache,
       cache->last_access.wb_end =
           evicted_addr + cache->config.cache_blk_size - 1;
     }
-    
-
-    // Update use recency
-    for (int i = 0; i < cache->config.associativity; i++) {
-      struct CacheBlock *blk = &cache->blocks[start_idx + i];
-      if (blk == best) {
-        blk->used_recency = 0;
-      } else {
-        blk->used_recency =
-            blk->used_recency == 127 ? 127 : blk->used_recency + 1;
-      }
-    }
     blk_hit = best;
 
     // Record eviction
     if (best->valid) {
       cache->last_access.eviction = true;
       cache->last_access.evicted_tag = blk_hit->tag;
-      cache->last_access.evicted_block_index =
-          index % cache->config.associativity;
-    } else {
-      cache->last_access.eviction = false;
     }
 
     // Get starting address of the block in main memory
     uint8_t *source_block =
-        &cache->inner->buffer[block_start]; // block start is technically block offset
+        &cache->inner
+             ->buffer[block_start]; // block start is technically block offset
     // Read memory into cache block
     memcpy(blk_hit->data, source_block, block_size);
     blk_hit->tag = tag;
@@ -177,32 +201,56 @@ Word *access_memory(struct SetAssociativeCache *const cache,
     blk_hit->dirty = false;
   }
 
-  cache->last_access.blk_index = index % cache->config.associativity;
+
+  // Update use recency
+  for (int i = 0; i < cache->config.associativity; i++) {
+    struct CacheBlock *blk = &cache->blocks[start_idx + i];
+    if (blk == blk_hit) {
+      blk->used_recency = 0;
+    } else {
+      blk->used_recency =
+          blk->used_recency == 127 ? 127 : blk->used_recency + 1;
+    }
+  }
+  assert(blk_hit->used_recency == 0);
+
+
+  // Store lru_queue in last_access
+  // It's not a queue so we have to build one
+  struct CacheBlock *arr[cache->config.associativity];
+  for (int i = 0; i < cache->config.associativity; i++) {
+    arr[i] = &cache->blocks[start_idx + i];
+  }
+  for (int i = 0; i < cache->config.associativity; i++) {
+    int j = find_oldest(arr, cache->config.associativity);
+    struct CacheBlock *blk = &cache->blocks[start_idx + j];
+    cache->last_access.lru_queue[i] = blk->tag;
+    arr[j] = NULL;
+  }
 
   if (write) {
     blk_hit->data[block_offset] = word;
 
     if (cache->config.write_strat == WriteThrough) {
       uint8_t *source_block =
-          &cache->inner->buffer[block_start]; // block start is technically block offset
+          &cache->inner
+               ->buffer[block_start]; // block start is technically block offset
       memcpy(source_block, blk_hit->data, block_size);
     } else {
       blk_hit->dirty = true;
     }
   }
+  cache->last_access.word = ((Word *)blk_hit->data)[block_offset];
 
   return &((Word *)blk_hit->data)[block_offset];
 }
 
-
 int read(struct SetAssociativeCache *const cache, uint32_t addr,
          Word *const target) {
-
   *target = *access_memory(cache, addr, 0, false);
 
   return 0;
 }
-
 
 int write(struct SetAssociativeCache *const cache, uint32_t addr,
           const Word *const value) {
