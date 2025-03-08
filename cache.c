@@ -1,7 +1,8 @@
 #include "cache.h"
 #include "math.h"
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 struct AddrComponents {
   uint32_t tag;
@@ -45,8 +46,8 @@ new_cache_backed_by(struct CacheConfig config,
   // initialize each block (empty/invalid)
   for (int i = 0; i < num_blocks; i++) {
     cache.blocks[i].tag = -1;
-    cache.blocks[i].valid = false;  // initialize as invalid
-    cache.blocks[i].dirty = false;  // initialize as clean
+    cache.blocks[i].valid = false; // initialize as invalid
+    cache.blocks[i].dirty = false; // initialize as clean
     cache.blocks[i].used_recency = 0;
     cache.blocks[i].data = malloc(config.cache_blk_size); // allocate memory
   }
@@ -72,8 +73,9 @@ static struct BlockBits get_block_bits(struct CacheConfig config) {
   return bits;
 }
 
-int read(struct SetAssociativeCache *const cache, uint32_t addr,
-         Word *const target) {
+Word *access_memory(struct SetAssociativeCache *const cache,
+                                        uint32_t addr, uint32_t word,
+                                        bool write) {
   struct BlockBits bits = get_block_bits(cache->config);
   const uint32_t block_size = cache->config.cache_blk_size;
 
@@ -88,7 +90,6 @@ int read(struct SetAssociativeCache *const cache, uint32_t addr,
   // Is this block in the set?
   struct CacheBlock *blk_hit = NULL;
   int start_idx = index * cache->config.associativity; // index of first block
-
   for (int i = 0; i < cache->config.associativity; i++) {
     struct CacheBlock *blk = &cache->blocks[start_idx + i];
     if (blk->valid && blk->tag == tag) { // if valid AND tag matches
@@ -125,21 +126,24 @@ int read(struct SetAssociativeCache *const cache, uint32_t addr,
     }
 
     // Handle write back
+    cache->last_access.write_back = false;
     if (best->valid && best->dirty && cache->config.write_strat == WriteBack) {
       uint32_t tag_part = best->tag << (bits.offset_bits + bits.index_bits);
       uint32_t index_part = index << bits.offset_bits;
 
-      uint32_t evicted_addr = tag_part | index_part; // combine parts for evicted address
+      uint32_t evicted_addr =
+          tag_part | index_part; // combine parts for evicted address
 
       // Write back the block
-      memcpy(&cache->inner->buffer[evicted_addr], 
-             best->data, 
+      memcpy(&cache->inner->buffer[evicted_addr], best->data,
              cache->config.cache_blk_size);
 
       cache->last_access.write_back = true;
       cache->last_access.wb_start = evicted_addr;
-      cache->last_access.wb_end = evicted_addr + cache->config.cache_blk_size - 1;
-    } 
+      cache->last_access.wb_end =
+          evicted_addr + cache->config.cache_blk_size - 1;
+    }
+    
 
     // Update use recency
     for (int i = 0; i < cache->config.associativity; i++) {
@@ -164,7 +168,9 @@ int read(struct SetAssociativeCache *const cache, uint32_t addr,
     }
 
     // Get starting address of the block in main memory
-    uint8_t *source_block = cache->inner->buffer + block_start; // block start is technically block offset
+    uint8_t *source_block =
+        cache->inner->buffer +
+        block_start; // block start is technically block offset
     // Read memory into cache block
     memcpy(blk_hit->data, source_block, block_size);
     blk_hit->tag = tag;
@@ -172,16 +178,43 @@ int read(struct SetAssociativeCache *const cache, uint32_t addr,
     blk_hit->dirty = false;
   }
 
-  Word *block_words = (Word *)blk_hit->data; // turn its byte array to word array
-  int word_index = block_offset / sizeof(Word);
-  *target = block_words[word_index];
+  cache->last_access.blk_index = index % cache->config.associativity;
 
-  cache->last_access.word = *target;
+  if (write) {
+    blk_hit->data[block_offset] = word;
+
+    if (cache->config.write_strat == WriteThrough) {
+      uint8_t *source_block =
+          cache->inner->buffer +
+          block_start; // block start is technically block offset
+      memcpy(source_block, blk_hit->data, block_size);
+    } else {
+      blk_hit->dirty = true;
+    }
+  }
+
+  printf("%d", ((Word *)blk_hit->data)[block_offset]);
+
+  return &((Word *)blk_hit->data)[block_offset];
+}
+
+
+int read(struct SetAssociativeCache *const cache, uint32_t addr,
+         Word *const target) {
+
+  *target = *access_memory(cache, addr, 0, false);
 
   return 0;
 }
 
+
 int write(struct SetAssociativeCache *const cache, uint32_t addr,
           const Word *const value) {
+  if (addr % 4 != 0) {
+    return 1;
+  }
+
+  access_memory(cache, addr, *value, true);
+
   return 0;
 }

@@ -29,6 +29,7 @@ struct CacheBlock {
   bool valid;         
   bool dirty;        
   int8_t used_recency; 
+  // Owned memory
   uint8_t *data;  
 };
 

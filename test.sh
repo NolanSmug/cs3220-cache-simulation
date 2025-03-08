@@ -11,6 +11,11 @@ gcc -o part_1_test.so tests/part_1_test.c cache.c access_metadata.c -lm -g &&
 
 echo "part_1_test.so: $?"
 
+gcc -o part_2_test.so tests/part_2_test.c cache.c access_metadata.c -lm -g && 
+	./part_2_test.so
+
+echo "part_2_test.so: $?"
+
 # Example debugger usage
 #
 # gdb ./test_cli.so
